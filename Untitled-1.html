@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío LascaVit - Promo Inmunidad</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to right, 
+                #c490d1 0%, #c490d1 14.28%, 
+                #fcdb49 14.28%, #fcdb49 28.56%, 
+                #e34440 28.56%, #e34440 42.84%, 
+                #f58220 42.84%, #f58220 57.12%, 
+                #35b4b1 57.12%, #35b4b1 71.4%, 
+                #8bc53f 71.4%, #8bc53f 85.68%, 
+                #3b3865 85.68%, #3b3865 100%);
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Botón de Pantalla Completa Flotante */
+        #fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: #3b3865;
+        }
+
+        #fullscreen-btn:hover {
+            transform: scale(1.05);
+            background: #fff;
+        }
+
+        /* Contenedor Principal Glassmorphism */
+        .game-container {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            width: 100%;
+            max-width: 650px;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        h1 {
+            color: #3b3865;
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: #f58220;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilos de Botones */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            margin: 14px 0;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-menu {
+            background: #3b3865;
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 56, 101, 0.3);
+        }
+
+        .btn-menu:hover:not(:disabled) {
+            background: #2a2749;
+            transform: translateY(-2px);
+        }
+
+        .btn-menu:disabled {
+            background: #a09eb3;
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        /* Opciones de respuesta */
+        .option-btn {
+            background: white;
+            color: #3b3865;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: #3b3865;
+            background: #f8fafc;
+        }
+
+        .option-btn.correct {
+            background: #8bc53f !important;
+            color: white !important;
+            border-color: #8bc53f !important;
+        }
+
+        .option-btn.incorrect {
+            background: #e34440 !important;
+            color: white !important;
+            border-color: #e34440 !important;
+        }
+
+        /* Inputs */
+        .input-group {
+            margin: 25px 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #3b3865;
+        }
+
+        /* Cabecera del Juego */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.95rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .player-tag {
+            color: #3b3865;
+            font-weight: 700;
+        }
+
+        /* Cronómetro */
+        .timer-box {
+            background: #3b3865;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            min-width: 60px;
+            transition: background 0.3s;
+        }
+
+        .timer-box.warning {
+            background: #e34440;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #8bc53f;
+            margin: 20px 0;
+        }
+
+        .podium-list {
+            text-align: left;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.5);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .podium-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #cbd5e1;
+            font-weight: 600;
+        }
+        .podium-item:last-child { border: none; }
+    </style>
+</head>
+<body>
+
+    <button id="fullscreen-btn" onclick="toggleFullscreen()">
+        📺 Pantalla Completa
+    </button>
+
+    <div class="game-container">
+        <h1>LascaVit</h1>
+        <div class="subtitle">Vitalidad que se siente</div>
+
+        <!-- PANTALLA 1: MENU PRINCIPAL -->
+        <div id="screen-menu" class="screen active">
+            <p style="margin-bottom: 20px; color: #475569; font-weight: 500;">Selecciona un participante para iniciar su ronda de 10 preguntas cronometradas.</p>
+            <button id="btn-p1" class="btn btn-menu" onclick="goToRegister(1)">Participante 1</button>
+            <button id="btn-p2" class="btn btn-menu" onclick="goToRegister(2)">Participante 2</button>
+            <button id="btn-p3" class="btn btn-menu" onclick="goToRegister(3)">Participante 3</button>
+            
+            <div id="podium-section" style="display:none; margin-top: 30px;">
+                <h3 style="color:#3b3865; margin-bottom:10px;">Tabla de Posiciones</h3>
+                <div id="podium-list" class="podium-list"></div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2: REGISTRO DE NOMBRE -->
+        <div id="screen-register" class="screen">
+            <h3 id="register-title" style="color: #3b3865; font-size: 1.4rem;">Registro Participante</h3>
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="Escribe tu nombre aquí..." autocomplete="off">
+            </div>
+            <button class="btn btn-menu" onclick="startGame()">Iniciar Cronómetro 🚀</button>
+            <button class="btn" style="background:#cbd5e1; color:#475569;" onclick="showScreen('screen-menu')">Volver</button>
+        </div>
+
+        <!-- PANTALLA 3: JUEGO ACTIVO -->
+        <div id="screen-game" class="screen">
+            <div class="game-header">
+                <div>Jugador: <span id="display-player-name" class="player-tag">-</span></div>
+                <div>Pregunta: <span id="display-progress">-</span></div>
+                <div>Puntos: <span id="display-score" style="color:#8bc53f; font-weight:bold;">0</span></div>
+                <div id="timer" class="timer-box">15s</div>
+            </div>
+            <div id="question-text" class="question-text">Cargando pregunta...</div>
+            <div id="options-container"></div>
+        </div>
+
+        <!-- PANTALLA 4: FIN DE RONDA -->
+        <div id="screen-result" class="screen">
+            <h2 style="color: #3b3865;">¡Ronda Completada!</h2>
+            <p style="margin-top:10px; color:#475569; font-weight:500;">Puntaje final de <span id="result-player-name" class="player-tag">-</span>:</p>
+            <div id="result-score" class="score-display">0</div>
+            <button class="btn btn-menu" onclick="showScreen('screen-menu')">Volver al Menú Principal</button>
+        </div>
+    </div>
+
+    <script>
+        // Banco de 30 preguntas divididas en 3 bloques exactos
+        const questionsPool = {
+            1: [
+                { q: "¿El Zinc + Vitamina C + Vitamina E refuerza el sistema inmune?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿El Calcio 500 actúa como coadyuvante en el tratamiento de la osteoporosis?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿El Magnesio tiene sabor Naranja y Pomelo?", type: "VF", options: ["Verdadero", "Falso"], correct: 1 },
+                { q: "¿Qué sabor tiene la Vitamina C de 1000 mg?", type: "MC", options: ["Naranja", "Limón", "Pomelo"], correct: 0 },
+                { q: "¿Cuál producto previene el daño oxidativo causado por radicales libres?", type: "MC", options: ["Magnesio", "Vitamina C 1000", "Zinc+Vit C+Vit E"], correct: 2 },
+                { q: "¿Cuántos miligramos indica la presentación de Vitamina C sola?", type: "MC", options: ["500 Mg", "1000 Mg", "2000 Mg"], correct: 1 },
+                { q: "Completa: El Calcio + Vitamina D3 es una combinación que favorece la _______ de Calcio.", type: "MC", options: ["Absorción", "Elimination", "Producción"], correct: 0 },
+                { q: "¿Qué producto contiene 10 vitaminas esenciales?", type: "MC", options: ["Multivitaminas+Minerales", "Calcio+Vitamina C", "Magnesio"], correct: 0 },
+                { q: "Según la gráfica grupal, la familia LascaVit pertenece a la línea...", type: "MC", options: ["Ética", "OTC", "Hospitalaria"], correct: 1 },
+                { q: "¿Todos los tubos indican traer 30 comprimidos efervescentes?", type: "VF", options: ["Verdadero", "Falso"], correct: 1 }
+            ],
+            2: [
+                { q: "¿Toda la línea LascaVit indica ser 'Sin lactosa'?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿El Calcio + Vitamina C tiene sabor a Naranja?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿El producto Multivitaminas + Minerales sirve para cubrir deficiencias nutricionales?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿Cuál de estos beneficios corresponde al Magnesio?", type: "MC", options: ["Salud cardiovascular", "Producción de colágeno", "Absorción de hierro"], correct: 0 },
+                { q: "¿Qué combinación tiene sabor a Naranja y Limón?", type: "MC", options: ["Calcio+Vitamina D3", "Calcio 500", "Magnesio"], correct: 1 },
+                { q: "¿Qué vitamina de la línea de las gráficas estimula la producción de colágeno en piel y huesos?", type: "MC", options: ["Vitamina C 1000 Mg", "Vitamina E", "Vitamina D3"], correct: 0 },
+                { q: "Completa: El producto Zinc + Vitamina C + Vitamina E combate el envejecimiento _______.", type: "MC", options: ["Precoz", "Celular", "Natural"], correct: 0 },
+                { q: "¿Qué minerales acompañan a las 10 vitaminas en el LascaVit verde?", type: "MC", options: ["Calcio+Magnesio+Potasio", "Zinc+Hierro", "Calcio+Zinc"], correct: 0 },
+                { q: "¿Para qué tipo de pacientes es apta la línea según sus iconos morados?", type: "MC", options: ["Solo Celíacos", "Celíacos y Diabéticos", "Solo Diabéticos"], correct: 1 },
+                { q: "¿El LascaVit Calcio + C crea una sinergia que favorece la absorción de qué?", type: "MC", options: ["Calcio", "Vitamina C", "Hierro"], correct: 0 }
+            ],
+            3: [
+                { q: "¿El Magnesio ayuda al mejoramiento del sueño?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿La línea LascaVit es un legado de Vicente Scavone desde 1935?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿El sabor de Calcio + Vitamina D3 es Naranja y Pomelo?", type: "VF", options: ["Verdadero", "Falso"], correct: 0 },
+                { q: "¿Cuál producto es un potente antioxidante y mejora la absorción de hierro?", type: "MC", options: ["Vitamina C 1000 Mg", "Magnesio", "Calcio 500"], correct: 0 },
+                { q: "¿Qué beneficio NO pertenece al Magnesio en las gráficas?", type: "MC", options: ["Salud ósea", "Combate el envejecimiento precoz", "Recuperación post actividad"], correct: 1 },
+                { q: "¿Qué sabor tiene el Multivitaminas + Minerales?", type: "MC", options: ["Naranja y Limón", "Naranja y Pomelo", "Durazno y Mburucuyá"], correct: 1 },
+                { q: "Completa: El Calcio 500 se usa para la prevención y tratamiento de _______ de calcio.", type: "MC", options: ["Exceso", "Déficit", "Desgaste"], correct: 1 },
+                { q: "¿Cuál es el sabor del producto que contiene Zinc?", type: "MC", options: ["Naranja", "Pomelo", "Durazno y Mburucuyá"], correct: 2 },
+                { q: "What product menciona el mantenimiento de la salud muscular y nerviosa?", type: "MC", options: ["Magnesio", "Calcio+D3", "Vitamina C"], correct: 0 },
+                { q: "¿Qué palabra completa el eslogan 'Vitalidad que se ____'?", type: "MC", options: ["Siente", "Nota", "Ve"], correct: 0 }
+            ]
+        };
+
+        let currentPool = 1;
+        let currentQuestionIdx = 0;
+        let score = 0;
+        let timerInterval = null;
+        let timeLeft = 15;
+        let leaderboard = [];
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error intentando activar pantalla completa: ${err.message}`);
+                });
+                document.getElementById('fullscreen-btn').innerText = "❌ Salir Completa";
+            } else {
+                document.exitFullscreen();
+                document.getElementById('fullscreen-btn').innerText = "📺 Pantalla Completa";
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if(screenId === 'screen-menu') {
+                updateMenuState();
+            }
+        }
+
+        function goToRegister(poolNum) {
+            currentPool = poolNum;
+            document.getElementById('player-name').value = "";
+            document.getElementById('register-title').innerText = `Registro - Participante ${poolNum}`;
+            showScreen('screen-register');
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (!nameInput) {
+                alert("Por favor, ingresa el nombre del participante.");
+                return;
+            }
+
+            // Inicializar datos de juego
+            currentQuestionIdx = 0;
+            score = 0;
+            
+            // Guardar info temporal del jugador activo
+            window.activePlayer = {
+                name: nameInput,
+                pool: currentPool
+            };
+
+            document.getElementById('display-player-name').innerText = nameInput;
+            document.getElementById('display-score').innerText = "0";
+
+            showScreen('screen-game');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            clearInterval(timerInterval);
+            timeLeft = 15;
+            
+            const timerEl = document.getElementById('timer');
+            timerEl.innerText = `${timeLeft}s`;
+            timerEl.classList.remove('warning');
+
+            const questions = questionsPool[currentPool];
+            if (currentQuestionIdx >= questions.length) {
+                endGame();
+                return;
+            }
+
+            document.getElementById('display-progress').innerText = `${currentQuestionIdx + 1} / ${questions.length}`;
+            
+            const currentQuestion = questions[currentQuestionIdx];
+            document.getElementById('question-text').innerText = currentQuestion.q;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = "";
+
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = "btn option-btn";
+                button.innerText = option;
+                button.onclick = () => handleAnswer(index);
+                optionsContainer.appendChild(button);
+            });
+
+            // Iniciar cuenta regresiva
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = `${timeLeft}s`;
+
+                if (timeLeft <= 5) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleAnswer(-1); // Tiempo agotado = Incorrecto
+                }
+            }, 1000);
+        }
+
+        function handleAnswer(selectedIndex) {
+            clearInterval(timerInterval);
+            const questions = questionsPool[currentPool];
+            const currentQuestion = questions[currentQuestionIdx];
+            const buttons = document.querySelectorAll('.option-btn');
+
+            // Deshabilitar todas las opciones
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === currentQuestion.correct) {
+                score += 10;
+                document.getElementById('display-score').innerText = score;
+                if(selectedIndex >= 0) buttons[selectedIndex].classList.add('correct');
+            } else {
+                if (selectedIndex >= 0) {
+                    buttons[selectedIndex].classList.add('incorrect');
+                }
+                // Mostrar la correcta siempre
+                buttons[currentQuestion.correct].classList.add('correct');
+            }
+
+            // Esperar 1.2 segundos y pasar a la siguiente pregunta de forma fluida
+            setTimeout(() => {
+                currentQuestionIdx++;
+                loadQuestion();
+            }, 1200);
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            
+            // Registrar en leaderboard
+            leaderboard.push({
+                name: window.activePlayer.name,
+                pool: window.activePlayer.pool,
+                score: score
+            });
+
+            // Marcar pool como completado en el DOM
+            document.getElementById(`btn-p${window.activePlayer.pool}`).disabled = true;
+
+            document.getElementById('result-player-name').innerText = window.activePlayer.name;
+            document.getElementById('result-score').innerText = `${score} pts`;
+
+            showScreen('screen-result');
+        }
+
+        function updateMenuState() {
+            if (leaderboard.length > 0) {
+                document.getElementById('podium-section').style.display = 'block';
+                const listEl = document.getElementById('podium-list');
+                listEl.innerHTML = "";
+                
+                // Ordenar de mayor a menor puntuación
+                const sorted = [...leaderboard].sort((a,b) => b.score - a.score);
+                sorted.forEach((player, index) => {
+                    listEl.innerHTML += `
+                        <div class="podium-item">
+                            <span>${index + 1}. ${player.name} (P${player.pool})</span>
+                            <span style="color:#8bc53f;">${player.score} Puntos</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
